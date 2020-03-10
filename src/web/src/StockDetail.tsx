@@ -3,10 +3,6 @@ import { RouteComponentProps } from "react-router-dom";
 import createStyles from '@material-ui/core/styles/createStyles';
 import withStyles, { WithStyles } from '@material-ui/core/styles/withStyles';
 import Grid from '@material-ui/core/Grid';
-import { API, graphqlOperation, Auth } from "aws-amplify";
-import * as queries from "./graphql/queries.js";
-import * as mutations from "./graphql/mutations.js";
-import * as subscriptions from "./graphql/subscriptions.js";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Label } from 'recharts';
 
 import MediaCard from './MediaCard';
@@ -23,10 +19,6 @@ const styles = (theme: any) => createStyles({
     }
 });
 
-type stockResponse = {
-    stock_value: string
-};
-
 interface State {
     stockData: Array<{ date: string, price: number | null}>,
     interval: number,
@@ -38,9 +30,7 @@ interface State {
         company_description: string
     },
     simulate: boolean,
-    simulation: number,
-    stockSubscription: {
-}
+    simulation: number
 }
 
 interface StyleProps extends WithStyles<typeof styles> {}
@@ -58,10 +48,7 @@ class StockDetail extends Component<Props, State> {
         authParams: { headers: { Authorization: "" }, response: false },
         company: { stock_value: 0, company_name: "", company_description: ""},
         simulate: false,
-        simulation: 0,
-        stockSubscription: {
-    unsubscribe: () => {}
-}
+        simulation: 0
     }
 
     constructor(props: Props) {
@@ -78,61 +65,24 @@ class StockDetail extends Component<Props, State> {
         this.stopAutoRefresh = this.stopAutoRefresh.bind(this);
         this.onAutoRefresh = this.onAutoRefresh.bind(this);
         // Bind the function that will receive the subscription updates
-        this.onStock = this.onStock.bind(this);
+        
         // Initiate the AppSync subscription
-        this.state.stockSubscription = API.graphql(graphqlOperation(subscriptions.SubscribeToStock))
-    //@ts-ignore
-    .subscribe({
-        next: this.onStock
-    });
     }
 
         async onStock({ value }: any) {
-        console.log("On Stock change: ", value.data);
-        const newComp = {
-            ...this.state.company,
-            stock_value: value.data.onStockChange.stock_value
-        };
-        this.setState({
-            company: newComp
-        });
-        await this.retrieveStock();
+
     }
 
     async retrieveStock() {
-        //@ts-ignore
-        const { data } = await API.graphql(
-            graphqlOperation(queries.GetHistogram, {
-                company_id: this.state.id,
-                limit: 10
-            })
-        );
-        console.log(data.stockHistogram);
-        const stockData = data.stockHistogram.map((r: stockResponse) => ({
-            date: "Today",
-            price: Number(r.stock_value)
-        }));
-        this.setState({ stockData });
+
     }
 
     async componentDidMount() {
-    this.retrieveStock();
-    const session = await Auth.currentSession();
-    this.setState({
-        authParams: {
-            headers: { Authorization: session.getIdToken().getJwtToken() },
-            response: true
-        }
-    });
-    //@ts-ignore
-    const { data } = await API.graphql(
-        graphqlOperation(queries.GetCompany, { id: this.state.id })
-        );
-    this.setState({ company: data.getCompany });
+
     }
 
     componentWillUnmount() {
-        this.state.stockSubscription.unsubscribe();
+        
     }
 
     onAutoRefresh(autorefresh: boolean) {
@@ -153,16 +103,7 @@ class StockDetail extends Component<Props, State> {
     }
 
      async onAction() {
-        //@ts-ignore
-        const { data } = await API.graphql(
-            graphqlOperation(mutations.UpdateCompanyStock, {
-                company_id: this.state.id
-            })
-        );
-        const newComp = { ...this.state.company, stock_value: data.updateCompanyStock.stock_value };
-        this.setState({
-            company: newComp
-        });
+
     }
 
     async onSimulate() {
