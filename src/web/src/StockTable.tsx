@@ -7,6 +7,7 @@ import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
+import Amplify, { API, Auth } from "aws-amplify";
 import Button from "@material-ui/core/Button";
 import { Link } from "react-router-dom";
 import StockDetail from "./StockDetail";
@@ -14,7 +15,26 @@ import StockDetail from "./StockDetail";
 const API_NAME = "companies";
 
 Amplify.configure({
-    
+    Auth: {
+        region: process.env.REACT_APP_DEFAULT_REGION,
+        userPoolId: process.env.REACT_APP_COGNITO_POOL_ID,
+        userPoolWebClientId: process.env.REACT_APP_COGNITO_POOL_CLIENT_ID
+    },
+    API: {
+        endpoints: [
+            {
+                name: API_NAME,
+                endpoint: process.env.REACT_APP_API_ENDPOINT,
+                region: process.env.REACT_APP_DEFAULT_REGION
+            }
+        ],
+        graphql_headers: async () => ({
+            Authorization: (await Auth.currentSession()).getIdToken().getJwtToken()
+        }),
+        aws_appsync_region: process.env.REACT_APP_DEFAULT_REGION,
+        aws_appsync_authenticationType: "AMAZON_COGNITO_USER_POOLS",
+        aws_appsync_graphqlEndpoint: process.env.REACT_APP_APPSYNC_ENDPOINT
+    }
 });
 
 const styles = (theme: any) =>
@@ -66,7 +86,16 @@ class StockTable extends Component<Props, State> {
     }
 
     async componentDidMount() {
-   
+        const session = await Auth.currentSession();
+        this.setState({
+            authParams: {
+                headers: { Authorization: session.getIdToken().getJwtToken() },
+                response: true
+            }
+        });
+
+        const { data } = await API.get(API_NAME, "/company", this.state.authParams);
+        this.setState({ itemData: data.Items });
     }
 
     async buyStock(id: string) {
