@@ -4,7 +4,7 @@ import createStyles from '@material-ui/core/styles/createStyles';
 import withStyles, { WithStyles } from '@material-ui/core/styles/withStyles';
 import Grid from '@material-ui/core/Grid';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Label } from 'recharts';
-
+import { API, Auth } from "aws-amplify";
 import MediaCard from './MediaCard';
 import StockActions from './StockActions';
 
@@ -18,6 +18,12 @@ const styles = (theme: any) => createStyles({
         color: theme.palette.text.secondary
     }
 });
+
+type stockResponse = {
+    _source: {
+        stockValue: string
+    }
+}
 
 interface State {
     stockData: Array<{ date: string, price: number | null}>,
@@ -74,7 +80,11 @@ class StockDetail extends Component<Props, State> {
     }
 
     async retrieveStock() {
-
+        const res = await API.get('companies', `/company/${this.state.id}/stock`, this.state.authParams);
+    
+        const stockData = res.data.map((r: stockResponse) => ({ data: 'Today', price: Number(r._source.stockValue) }));
+    
+        this.setState({ stockData });
     }
 
     async componentDidMount() {
