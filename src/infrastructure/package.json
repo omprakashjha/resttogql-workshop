@@ -12,7 +12,7 @@
     "devDependencies": {
         "@types/node": "^8.9.4",
         "typescript": "^3.1.2",
-        "aws-cdk": "^0.34.0"
+        "aws-cdk": "^2.43.1"
     },
     "dependencies": {
         "@aws-cdk/assert": "^0.34.0",
